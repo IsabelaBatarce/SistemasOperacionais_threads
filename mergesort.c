@@ -4,16 +4,16 @@
 #include <sys/time.h>
 
 /* define variables for the problem */
-#define SEED  100
-#define LENGTH 100000
+int LENGTH = 0;
 #define UPPER_LIM 10000
 #define LOWER_LIM  1
-#define NUM_THREADS 2
 
 /* define derived values from the variables */
-const int NUMBERS_PER_THREAD = LENGTH / NUM_THREADS;
-const int OFFSET = LENGTH % NUM_THREADS;
-int arr[LENGTH];
+int NUM_THREADS;
+int arr[UPPER_LIM];
+int NUMBERS_PER_THREAD;
+int OFFSET;
+
 
 /* function definitions */
 int generate_random_number(unsigned int lower_limit, unsigned int upper_limit);
@@ -24,43 +24,58 @@ void merge_sections_of_array(int arr[], int number, int aggregation);
 void test_array_is_in_order(int arr[]);
 
 int main(int argc, const char * argv[]) {
-    srand(SEED);
+
     struct timeval  start, end;
     double time_spent;
-    
-    /* initialize array with random numbers */
-    for (int i = 0; i < LENGTH; i ++) {
-        arr[i] = generate_random_number(LOWER_LIM, UPPER_LIM);
+
+    if(argc<2){
+        printf("faltam argumentos /n");
     }
-    
-    /* begin timing */
-    pthread_t threads[NUM_THREADS];
-    gettimeofday(&start, NULL);
-    
-    /* create threads */
-    for (long i = 0; i < NUM_THREADS; i ++) {
-        int rc = pthread_create(&threads[i], NULL, thread_merge_sort, (void *)i);
-        if (rc){
-            printf("ERROR; return code from pthread_create() is %d\n", rc);
-            exit(-1);
+    else{
+        NUM_THREADS = strtol (argv[1],NULL,10);
+
+        pthread_t threads[NUM_THREADS];
+        gettimeofday(&start, NULL);
+        //pegar dos arquivos aqui
+        for(int a=2; a<argc;a++){
+			printf("argv %s\n",argv[a]);
+			FILE *fp = fopen(argv[a],"r");
+				while(!feof(fp)){
+				fscanf(fp,"%d\n",&arr[LENGTH++]);
+				}
+			fclose(fp);
+		}
+
+		NUMBERS_PER_THREAD = LENGTH / NUM_THREADS;
+        OFFSET = LENGTH % NUM_THREADS;
+
+        for (long i = 0; i < NUM_THREADS; i ++) {
+            int rc = pthread_create(&threads[i], NULL, thread_merge_sort, (void *)i);
+            if (rc){
+                printf("ERROR; return code from pthread_create() is %d\n", rc);
+                exit(-1);
+            }
+        }
+
+        for(long i = 0; i < NUM_THREADS; i++) {
+            pthread_join(threads[i], NULL);
+        }
+
+        merge_sections_of_array(arr, NUM_THREADS, 1);
+
+
+        gettimeofday(&end, NULL);
+        time_spent = ((double) ((double) (end.tv_usec - start.tv_usec) / 1000000 +
+                                (double) (end.tv_sec - start.tv_sec)));
+        printf("Time taken for execution: %f seconds\n", time_spent);
+        printf("Array ordenado:");
+        for (int i = 0; i < LENGTH; i ++) {
+            printf("%d ",arr[i]);
         }
     }
-    
-    for(long i = 0; i < NUM_THREADS; i++) {
-        pthread_join(threads[i], NULL);
-    }
 
-    merge_sections_of_array(arr, NUM_THREADS, 1);
-    
-    /* end timing */
-    gettimeofday(&end, NULL);
-    time_spent = ((double) ((double) (end.tv_usec - start.tv_usec) / 1000000 +
-                            (double) (end.tv_sec - start.tv_sec)));
-    printf("Time taken for execution: %f seconds\n", time_spent);
-	printf("Array ordenado:");		 
-	for (int i = 0; i < LENGTH; i ++) {
-		printf("%d ",arr[i]);	
-	}
+
+
     /* test to ensure that the array is in sorted order */
     /* test_array_is_in_order(arr); */
     return 0;
@@ -138,17 +153,17 @@ void merge(int arr[], int left, int middle, int right) {
     int right_length = right - middle;
     int left_array[left_length];
     int right_array[right_length];
-    
+
     /* copy values to left array */
     for (int i = 0; i < left_length; i ++) {
         left_array[i] = arr[left + i];
     }
-    
+
     /* copy values to right array */
     for (int j = 0; j < right_length; j ++) {
         right_array[j] = arr[middle + 1 + j];
     }
-    
+
     i = 0;
     j = 0;
     /** chose from right and left arrays and copy */
@@ -162,7 +177,7 @@ void merge(int arr[], int left, int middle, int right) {
         }
         k ++;
     }
-    
+
     /* copy the remaining values to the array */
     while (i < left_length) {
         arr[left + k] = left_array[i];
