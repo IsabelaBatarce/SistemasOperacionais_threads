@@ -118,20 +118,6 @@ void *thread_merge_sort(void* arg)
     return NULL;
 }
 
-/* teste para ver se o vetor esta ordenado 
-void teste_vetor_ordenado(int v[]) {
-    int max = 0;
-    for (int i = 1; i < TAMANHO; i ++) {
-        if (v[i] >= v[i - 1]) {
-            max = v[i];
-        } else {
-            printf("Erro, A sequência esta fora de ordem: numero encontrado %d\n", v[i]);
-            return;
-        }
-    }
-    printf("Vetor esta ordenado\n");
-}
-*/
 /* Realizando o merge sort */
 void merge_sort(int v[], int inicio, int final) {
     if (inicio < final) {
