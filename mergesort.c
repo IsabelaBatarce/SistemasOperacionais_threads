@@ -3,25 +3,22 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-/* define variables for the problem */
-int LENGTH = 0;
+/* definindo as variaveis  */
+int TAMANHO = 0;
 #define UPPER_LIM 10000
 #define LOWER_LIM  1
-
-/* define derived values from the variables */
 int NUM_THREADS;
-int arr[UPPER_LIM];
+int v[UPPER_LIM];
 int NUMBERS_PER_THREAD;
 int OFFSET;
 
 
-/* function definitions */
-int generate_random_number(unsigned int lower_limit, unsigned int upper_limit);
-void merge_sort(int arr[], int left, int right);
-void merge(int arr[], int left, int middle, int right);
+/* Declarando as funções */
+void merge_sort(int v[], int inicio, int final);
+void merge(int v[], int inicio, int meio, int final);
 void* thread_merge_sort(void* arg);
-void merge_sections_of_array(int arr[], int number, int aggregation);
-void test_array_is_in_order(int arr[]);
+void mesclando_subvetores(int v[], int numero, int aggregation);
+void teste_vetor_ordenado(int v[]);
 
 int main(int argc, const char * argv[]) {
 
@@ -41,13 +38,13 @@ int main(int argc, const char * argv[]) {
 			printf("argv %s\n",argv[a]);
 			FILE *fp = fopen(argv[a],"r");
 				while(!feof(fp)){
-				fscanf(fp,"%d\n",&arr[LENGTH++]);
+				fscanf(fp,"%d\n",&v[TAMANHO++]);
 				}
 			fclose(fp);
 		}
 
-		NUMBERS_PER_THREAD = LENGTH / NUM_THREADS;
-        OFFSET = LENGTH % NUM_THREADS;
+		NUMBERS_PER_THREAD = TAMANHO / NUM_THREADS;
+        OFFSET = TAMANHO % NUM_THREADS;
 
         for (long i = 0; i < NUM_THREADS; i ++) {
             int rc = pthread_create(&threads[i], NULL, thread_merge_sort, (void *)i);
@@ -61,131 +58,132 @@ int main(int argc, const char * argv[]) {
             pthread_join(threads[i], NULL);
         }
 
-        merge_sections_of_array(arr, NUM_THREADS, 1);
+        mesclando_subvetores(v, NUM_THREADS, 1);
 
 
         gettimeofday(&end, NULL);
         time_spent = ((double) ((double) (end.tv_usec - start.tv_usec) / 1000000 +
                                 (double) (end.tv_sec - start.tv_sec)));
-        printf("Time taken for execution: %f seconds\n", time_spent);
-        printf("Array ordenado:");
-        for (int i = 0; i < LENGTH; i ++) {
-            printf("%d ",arr[i]);
+        printf("Tempo gasto na execucao: %f segundos\n", time_spent);
+        printf("Vetor ordenado:");
+        for (int i = 0; i < TAMANHO; i ++) {
+            printf("%d ",v[i]);
         }
+	FILE *fp;	
+	fp = fopen("saida.txt","w");
+	for (int i = 0; i < TAMANHO; i ++) {
+            fprintf(fp,"%d ",v[i]);
+        }
+		fclose(fp);
     }
 
 
 
-    /* test to ensure that the array is in sorted order */
-    /* test_array_is_in_order(arr); */
+    /* teste para garantir que o vetor está ordenado*/
+    /* teste_vetor_ordenado(v); */
     return 0;
 }
 
-/* generate random numbers within the specified limit */
-int generate_random_number(unsigned int lower_limit, unsigned int upper_limit) {
-    return lower_limit + (upper_limit - lower_limit) * ((double)rand() / RAND_MAX);
-}
-
-/* merge locally sorted sections */
-void merge_sections_of_array(int arr[], int number, int aggregation) {
-    for(int i = 0; i < number; i = i + 2) {
-        int left = i * (NUMBERS_PER_THREAD * aggregation);
-        int right = ((i + 2) * NUMBERS_PER_THREAD * aggregation) - 1;
-        int middle = left + (NUMBERS_PER_THREAD * aggregation) - 1;
-        if (right >= LENGTH) {
-            right = LENGTH - 1;
+/* Mesclar seções dos vetores */
+void mesclando_subvetores(int v[], int numero, int aggregation) {
+    for(int i = 0; i < numero; i = i + 2) {
+        int inicio = i * (NUMBERS_PER_THREAD * aggregation);
+        int final = ((i + 2) * NUMBERS_PER_THREAD * aggregation) - 1;
+        int meio = inicio + (NUMBERS_PER_THREAD * aggregation) - 1;
+        if (final >= TAMANHO) {
+            final = TAMANHO - 1;
         }
-        merge(arr, left, middle, right);
+        merge(v, inicio, meio, final);
     }
-    if (number / 2 >= 1) {
-        merge_sections_of_array(arr, number / 2, aggregation * 2);
+    if (numero / 2 >= 1) {
+        mesclando_subvetores(v, numero / 2, aggregation * 2);
     }
 }
 
-/** assigns work to each thread to perform merge sort */
+/** Atribui o trabalho para cada thread executar o merge sort */
 void *thread_merge_sort(void* arg)
 {
     int thread_id = (long)arg;
-    int left = thread_id * (NUMBERS_PER_THREAD);
-    int right = (thread_id + 1) * (NUMBERS_PER_THREAD) - 1;
+    int inicio = thread_id * (NUMBERS_PER_THREAD);
+    int final = (thread_id + 1) * (NUMBERS_PER_THREAD) - 1;
     if (thread_id == NUM_THREADS - 1) {
-        right += OFFSET;
+        final += OFFSET;
     }
-    int middle = left + (right - left) / 2;
-    if (left < right) {
-        merge_sort(arr, left, right);
-        merge_sort(arr, left + 1, right);
-        merge(arr, left, middle, right);
+    int meio = inicio + (final - inicio) / 2;
+    if (inicio < final) {
+        merge_sort(v, inicio, final);
+        merge_sort(v, inicio + 1, final);
+        merge(v, inicio, meio, final);
     }
     return NULL;
 }
 
-/* test to ensure that the array is in sorted order */
-void test_array_is_in_order(int arr[]) {
+/* teste para ver se o vetor esta ordenado 
+void teste_vetor_ordenado(int v[]) {
     int max = 0;
-    for (int i = 1; i < LENGTH; i ++) {
-        if (arr[i] >= arr[i - 1]) {
-            max = arr[i];
+    for (int i = 1; i < TAMANHO; i ++) {
+        if (v[i] >= v[i - 1]) {
+            max = v[i];
         } else {
-            printf("Error. Out of order sequence: %d found\n", arr[i]);
+            printf("Erro, A sequência esta fora de ordem: numero encontrado %d\n", v[i]);
             return;
         }
     }
-    printf("Array is in sorted order\n");
+    printf("Vetor esta ordenado\n");
 }
-
-/* perform merge sort */
-void merge_sort(int arr[], int left, int right) {
-    if (left < right) {
-        int middle = left + (right - left) / 2;
-        merge_sort(arr, left, middle);
-        merge_sort(arr, middle + 1, right);
-        merge(arr, left, middle, right);
+*/
+/* Realizando o merge sort */
+void merge_sort(int v[], int inicio, int final) {
+    if (inicio < final) {
+        int meio = inicio + (final - inicio) / 2;
+        merge_sort(v, inicio, meio);
+        merge_sort(v, meio + 1, final);
+        merge(v, inicio, meio, final);
     }
 }
 
-/* merge function */
-void merge(int arr[], int left, int middle, int right) {
+/* Função merge */
+void merge(int v[], int inicio, int meio, int final) {
     int i = 0;
     int j = 0;
     int k = 0;
-    int left_length = middle - left + 1;
-    int right_length = right - middle;
-    int left_array[left_length];
-    int right_array[right_length];
+    int TAMANHO_inicio = meio - inicio + 1;
+    int TAMANHO_direito = final - meio;
+    int vetor_esquerdo[TAMANHO_inicio];
+    int vetor_direito[TAMANHO_direito];
 
-    /* copy values to left array */
-    for (int i = 0; i < left_length; i ++) {
-        left_array[i] = arr[left + i];
+    /* copia os valores para o vetor esquerdo */
+    for (int i = 0; i < TAMANHO_inicio; i ++) {
+        vetor_esquerdo[i] = v[inicio + i];
     }
 
-    /* copy values to right array */
-    for (int j = 0; j < right_length; j ++) {
-        right_array[j] = arr[middle + 1 + j];
+    /* copia os valores para  o vetor direito*/
+    for (int j = 0; j < TAMANHO_direito; j ++) {
+        vetor_direito[j] = v[meio + 1 + j];
     }
 
     i = 0;
     j = 0;
-    /** chose from right and left arrays and copy */
-    while (i < left_length && j < right_length) {
-        if (left_array[i] <= right_array[j]) {
-            arr[left + k] = left_array[i];
+    /** Escolhendo valores entre o vetor esquerdo e o vetor direito*/
+    while (i < TAMANHO_inicio && j < TAMANHO_direito) {
+        if (vetor_esquerdo[i] <= vetor_direito[j]) {
+            v[inicio + k] = vetor_esquerdo[i];
             i ++;
         } else {
-            arr[left + k] = right_array[j];
+            v[inicio + k] = vetor_direito[j];
             j ++;
         }
         k ++;
     }
 
-    /* copy the remaining values to the array */
-    while (i < left_length) {
-        arr[left + k] = left_array[i];
+    /* Copiando os valores que restam */
+    while (i < TAMANHO_inicio) {
+        v[inicio + k] = vetor_esquerdo[i];
         k ++;
         i ++;
     }
-    while (j < right_length) {
-        arr[left + k] = right_array[j];
+    while (j < TAMANHO_direito) {
+        v[inicio + k] = vetor_direito[j];
         k ++;
         j ++;
     }
