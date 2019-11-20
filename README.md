@@ -5,7 +5,9 @@ Este projeto visa a criação de um programa que utilize múltiplas threads para
 
 ### Solução do Problema 
 
-Para solucionar o problema descrito acima, utilizou-se algumas das documentações disponibilizadas no moodle, principalmente os documentos utilizados na aula prática no laboratório. Dessa forma, iniciou-se o desenvolvimento do trabalho testando os materias disponíveis, para melhor compreensão de como funciona um programa com múltiplas threads.
+ O método escolhido para solucionar o problema foi a técnica de merge and sort, muitas vezes traduzida para “dividir e conquistar” que consiste em lidar com um vetor inicial de inteiros e dividi-lo em várias partes menores, ordenando uma por uma e então ordenando estes subvetores de volta em um vetor principal. 
+
+#### O código
 
 ###### Bibliotecas
 
@@ -18,7 +20,7 @@ No início do arquivo mergesort.c há a declaração das seguintes bibliotecas:
 #include <sys/time.h>
 ```
 
-As primeiras duas, são bibliotecas padrões normalmente utilizadas em quaisquer programas em C. A biblioteca <pthread> é a principal a ser utilizada neste trabalho, uma vez esta é um padrão POSIX para threads, a qual define uma API padrão para criar e manipular threads. E por último a <sys/time.h>.    
+As primeiras duas, são bibliotecas padrões normalmente utilizadas em quaisquer programas em C. A biblioteca <pthread> é a principal a ser utilizada neste trabalho, uma vez esta é um padrão POSIX para threads, a qual define uma API padrão para criar e manipular threads. E por último a biblioteca <sys/time.h>, a qual é utilizada para pegar o tempo do sistema já formatado.    
 
 ###### Funções e variáveis
 
@@ -26,20 +28,18 @@ Posteriormente, definimos algumas variáveis e funções para o programa:
 
 ```c
 int TAMANHO = 0;
-#define UPPER_LIM 10000
-#define LOWER_LIM  1
-int NUM_THREADS;
-int v[UPPER_LIM];
-int NUMBERS_PER_THREAD;
-int OFFSET;
+#define UPPER_LIM 10000 /*Quantidade máxima de números que podem entrar no sistema*/
+#define LOWER_LIM  1 /*Quantidade mínima para o programa rodar*/
+int NUM_THREADS; /*Variável global para a quantidade de threads do sistema*/
+int v[UPPER_LIM]; /*Vetor global utilizada para guardar todos os números dos arquivos de entrada*/
+int NUMBERS_PER_THREAD; /*Quantidade de números designados para cada thread */
+int OFFSET; 
 void merge_sort(int v[], int inicio, int final);
 void merge(int v[], int inicio, int meio, int final);
 void* thread_merge_sort(void* arg);
 void mesclando_subvetores(int v[], int numero, int aggregation);
 void teste_vetor_ordenado(int v[]);
 ```
-
-#### O código
 
 ###### Funções
 
@@ -62,10 +62,9 @@ void *thread_merge_sort(void* arg)
 }
 ```
 
+ A função acima, é basicamente um roteiro do que cada thread deve seguir, primeiramente ela recebe o id da thread para encontrar os limites iniciais e finais do vetor, isto é, o primeiro e último elemento do vetor. Posteriormente, os dados são divididos em subsequências pequenas,este passo é realizado na função merge_sort, recursivamente, iniciando com a divisão do vetor de n elementos em duas metades, cada uma das metades é novamente dividida em duas novas metades e assim por diante, até que não seja mais possível a divisão, ou seja, sobrem n vetores com um elemento cada. Sendo assim, o programa subdivide os vetores em dois por meio da função merge_sort e por fim junta-os com a função merge. Veremos o funcionamento das funções merge e merge_sort a seguir. 
 
- A função acima tem como objetivo dividir os dados em subsequências pequenas,este passo é realizado recursivamente, iniciando com a divisão do vetor de n elementos em duas metades, cada uma das metades é novamente dividida em duas novas metades e assim por diante, até que não seja mais possível a divisão (ou seja, sobrem n vetores com um elemento cada).
-
-Dessa forma, ele utiliza as funções merge e merge_sort para ordenar o vetor. Veremos o funcionamento das mesmas a seguir.
+A função merge_sort é uma função recursiva, que utiliza como argumentos os limites que foram dados na função anterior. O programa pega os vetores que ele recebe na chamada da função, e então vai separando-os em dois sub-vetores até que cada vetor seja dividido para apenas um elemento em cada, no fim ele possuí dois vetores, um com o início e outro com o final, dessa forma, utiliza-se a função merge para juntar ambos em um vetor final. 
 
 ```c
 void merge_sort(int v[], int inicio, int final) {
@@ -78,9 +77,7 @@ void merge_sort(int v[], int inicio, int final) {
 }
 ```
 
-A função merge_sort é uma função recursiva, que utiliza como argumentos os limites que foram dados na função anterior. Sendo assim, o programa separa a função em duas e chama o merge_sort pra cada uma e por fim junta as duas com a função merge. 
-
-A seguir na função merge, o programa pega os sub-vetores que ele recebe na chamada da função merge sort, e então vai separando-os em dois subvetores até que cada vetor seja dividido para apenas um elemento em cada, então ele compara esses valores e troca as posições deles, devolvendo para o vetor inicial . O código desta função inicia-se com a declaração das variáveis que definem os tamanhos dos vetores que serão utilizados. Posteriormente por meio do laço de repetição os valores do iniciais, isto é, a primeira metade do vetor (lembre-se ele foi subdividido em 2) são transferidos para o vetor_esquerdo, o mesmo acontece com o vetor direito, porém nesse caso seria a segunda metade.
+ O código abaixo, da função merge, inicia-se com a declaração das variáveis que definem os tamanhos dos vetores que serão utilizados. Posteriormente por meio do laço de repetição os valores iniciais, ou seja , a primeira metade do vetor são transferidos para o vetor_esquerdo, o mesmo acontece com o vetor direito, porém nesse caso seria a segunda metade. Por fim, os valores do vetor esquerdo e do vetor direito são comparados para ordena-los em um vetor final com a junção dos dois.
 
 ```c
 void merge(int v[], int inicio, int meio, int final) {
@@ -99,7 +96,7 @@ void merge(int v[], int inicio, int meio, int final) {
 
     /* copia os valores para  o vetor direito*/
     for (int j = 0; j < TAMANHO_direito; j ++) {
-        vetor_direito[j] = v[meio + 1 + j]S;
+        vetor_direito[j] = v[meio + 1 + j];
     }
 
     i = 0;
@@ -130,7 +127,7 @@ void merge(int v[], int inicio, int meio, int final) {
 
 ```
 
-Na função abaixo, junta os vetores locais (que já estão ordenados), para formar um array global. 
+A função abaixo, junta os vetores locais (que já estão ordenados), para formar um array global. 
 
 ```c
   void mesclando_subvetores(int v[], int numero, int aggregation) {
@@ -149,7 +146,7 @@ Na função abaixo, junta os vetores locais (que já estão ordenados), para for
 }
 ```
 
-Falar sobre a main 
+Por fim, na main a primeira função a ser cumprida é o recebimento dos arquivos de entrada que é feito através dos parâmetros recebidos, argc e argv, para tanto é criado um laço de repetição, dentro deste é feita a leitura de dos dados de cada um dos arquivos de entrada, os mesmos são posteriormente salvos em um vetor. Caso o usuário não tenha fornecido a quantidade mínima de argumentos para o programa funcionar, é emitida uma mensagem de erro na tela "Faltam argumentos". Além disso, inicia-se uma contagem do tempo de execução do programa no início desta função, para tanto utiliza-se a função  gettimeofday() para pegar o tempo inicial e final do sistema, estes valores são utilizados no final, quando a variável time_spent subtraí o valor final do inicial, para obter o tempo de execução, veja que ela informa o tempo em segundos. Em seguida o programa salva em uma variável global o número de threads requisitada pelo usuário e cria um vetor para armazenar as threads a serem criadas. O próximo passo é dividir o total de números lidos pela quantidade de threads a serem criadas, e então cria-las e iniciá-las com a função thread_merge_sort e então usar a função “join” para anexá-las ao fluxo inicial. Por fim os valores ordenados são mesclados em um vetor principal que é usado para gravar os dados em um arquivo de saída.
 
 ```c
 int main(int argc, const char * argv[]) {
@@ -161,9 +158,9 @@ int main(int argc, const char * argv[]) {
         printf("faltam argumentos /n");
     }
     else{
-        NUM_THREADS = strtol (argv[1],NULL,10);
+        NUM_THREADS = strtol(argv[1],NULL,10);/*Transforma os valores em int*/
 
-        pthread_t threads[NUM_THREADS];
+        pthread_t threads[NUM_THREADS];/*tipo threads*/
         gettimeofday(&start, NULL);
         //pegar dos arquivos aqui
         for(int a=2; a<argc;a++){
@@ -181,7 +178,7 @@ int main(int argc, const char * argv[]) {
         for (long i = 0; i < NUM_THREADS; i ++) {
             int rc = pthread_create(&threads[i], NULL, thread_merge_sort, (void *)i);
             if (rc){
-                printf("ERROR; return code from pthread_create() is %d\n", rc);
+                printf("ERRO\n", rc);
                 exit(-1);
             }
         }
@@ -241,9 +238,11 @@ Dessa forma, o programa está pronto para rodar, e irá criar um arquivo de saí
 
 ### Gráficos
 
+O gráfico abaixo demonstra o desempenho do sistema em diferentes condições, pode-se notar o comportamento de aumento no tempo de execução do programa em consonância com o aumento do número de arquivos e de threads, isso se dá devido a recursividade da função merge, que faz com que o programa passe mais tempo nela conforme a quantidade de threads aumenta. Ademais, o modelo de threads utilizado, que por sua vez separa igualmente o tempo para cada thread que foi criada (1 thread = 1 tempo), torna o tempo total uma soma cada vez maior conforme a quantidade de threads aumenta. 
+
+ **![img](https://lh3.googleusercontent.com/d9xxaQLmDO9H3cfXfYnpSmEKHy_fIk7XpRwqHvBvBUJtYozZcBXZgFcArgEBJstuo-ldpTgHB9zVIlwH_F_VrmryGfVUTagozt6mSSm9XbwsVGlB4huBw-9ky7Sk4dJM8KcTJpa1)** 
 
 
 
-
-
+  
 
