@@ -5,12 +5,12 @@
 
 /* definindo as variaveis  */
 int TAMANHO = 0;
-#define UPPER_LIM 10000
-#define LOWER_LIM  1
-int NUM_THREADS;
-int v[UPPER_LIM];
-int NUMBERS_PER_THREAD;
-int OFFSET;
+#define UPPER_LIM 10000 /*Quantidade máxima de números que podem entrar no sistema*/
+#define LOWER_LIM  1 /*Quantidade mínima para o programa rodar*/
+int NUM_THREADS; /*Variável global para a quantidade de threads do sistema*/
+int v[UPPER_LIM]; /*Vetor global utilizado para guardar todos os números dos arquivos de entrada*/
+int NUMBERS_PER_THREAD; /*Quantidade de números designados para cada thread*/
+int OFFSET; /*Utilizada na main para guardar o resto da divisão da quantidade de números para cada thread*/
 
 
 /* Declarando as funções */
@@ -31,7 +31,7 @@ int main(int argc, const char * argv[]) {
         printf("faltam argumentos /n");
     }
     else{
-        NUM_THREADS = strtol (argv[1],NULL,10);
+        NUM_THREADS = strtol (argv[1],NULL,10);/*transforma o valor em inteiro */
 
         pthread_t threads[NUM_THREADS];
         gettimeofday(&start, NULL);
@@ -45,37 +45,28 @@ int main(int argc, const char * argv[]) {
 			fclose(fp);
 		}
 
-		NUMBERS_PER_THREAD = TAMANHO / NUM_THREADS;
-        OFFSET = TAMANHO % NUM_THREADS;
+	NUMBERS_PER_THREAD = TAMANHO / NUM_THREADS; /*Divide a quantidade de números que cada thread deverá cuidar*/
+        OFFSET = TAMANHO % NUM_THREADS; /*Verifica se nenhuma thread está com números a mais*/
 
-        ctTempoInicial = clock();
+        ctTempoInicial = clock(); /*Inicia a contagem do tempo de execução*/
         for (long i = 0; i < NUM_THREADS; i ++) {
             int rc = pthread_create(&threads[i], NULL, thread_merge_sort, (void *)i);
             if (rc){
-                printf("ERROR; return code from pthread_create() is %d\n", rc);
+                printf("ERRO\n");
                 exit(-1);
             }
         }
-
+	/*Junta as threads no fluxo princial*/
         for(long i = 0; i < NUM_THREADS; i++) {
             pthread_join(threads[i], NULL);
         }
 
-        mesclando_subvetores(v, NUM_THREADS, 1);
-        ctTempoFinal = clock();
+        mesclando_subvetores(v, NUM_THREADS, 1);/*mesclando todos os sub-vetores*/
+        ctTempoFinal = clock();/*Finaliza a contagem do tempo de execução*/
 
-        /*gettimeofday(&end, NULL);
-        time_spent = ((double) ((double) (end.tv_usec - start.tv_usec) / 1000000 +
-                                (double) (end.tv_sec - start.tv_sec)));*/
-        //printf("Tempo gasto na execucao: %f segundos\n", time_spent);
+        
         printf("Tempo Decorrido : %f\n", (double)(ctTempoFinal - ctTempoInicial) / CLOCKS_PER_SEC);
-/* 
-       printf("Vetor ordenado:");
-        for (int i = 0; i < TAMANHO; i ++) {
-            printf("%d ",v[i]);
-        }
-*/	
-		
+	
 	fp = fopen(argv[argc-1],"w");
 	for (int i = 0; i < TAMANHO; i ++) 
             fprintf(fp,"%d ",v[i]);
@@ -123,20 +114,6 @@ void *thread_merge_sort(void* arg)
     return NULL;
 }
 
-/* teste para ver se o vetor esta ordenado 
-void teste_vetor_ordenado(int v[]) {
-    int max = 0;
-    for (int i = 1; i < TAMANHO; i ++) {
-        if (v[i] >= v[i - 1]) {
-            max = v[i];
-        } else {
-            printf("Erro, A sequência esta fora de ordem: numero encontrado %d\n", v[i]);
-            return;
-        }
-    }
-    printf("Vetor esta ordenado\n");
-}
-*/
 /* Realizando o merge sort */
 void merge_sort(int v[], int inicio, int final) {
     if (inicio < final) {
