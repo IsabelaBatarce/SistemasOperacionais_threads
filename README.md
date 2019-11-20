@@ -27,13 +27,15 @@ As primeiras duas, são bibliotecas padrões normalmente utilizadas em quaisquer
 Posteriormente, definimos algumas variáveis e funções para o programa:
 
 ```c
+/* definindo as variaveis  */
 int TAMANHO = 0;
 #define UPPER_LIM 10000 /*Quantidade máxima de números que podem entrar no sistema*/
 #define LOWER_LIM  1 /*Quantidade mínima para o programa rodar*/
 int NUM_THREADS; /*Variável global para a quantidade de threads do sistema*/
-int v[UPPER_LIM]; /*Vetor global utilizada para guardar todos os números dos arquivos de entrada*/
-int NUMBERS_PER_THREAD; /*Quantidade de números designados para cada thread */
-int OFFSET; 
+int v[UPPER_LIM]; /*Vetor global utilizado para guardar todos os números dos arquivos de entrada*/
+int NUMBERS_PER_THREAD; /*Quantidade de números designados para cada thread*/
+int OFFSET; /*Utilizada na main para guardar o resto da divisão da quantidade de números para cada thread*/
+/* Declarando as funções */
 void merge_sort(int v[], int inicio, int final);
 void merge(int v[], int inicio, int meio, int final);
 void* thread_merge_sort(void* arg);
@@ -124,13 +126,14 @@ void merge(int v[], int inicio, int meio, int final) {
         k ++;
         j ++;
     }
+}
 
 ```
 
 A função abaixo, junta os vetores locais (que já estão ordenados), para formar um array global. 
 
 ```c
-  void mesclando_subvetores(int v[], int numero, int aggregation) {
+void mesclando_subvetores(int v[], int numero, int aggregation) {
     for(int i = 0; i < numero; i = i + 2) {
         int inicio = i * (NUMBERS_PER_THREAD * aggregation);
         int final = ((i + 2) * NUMBERS_PER_THREAD * aggregation) - 1;
@@ -146,24 +149,26 @@ A função abaixo, junta os vetores locais (que já estão ordenados), para form
 }
 ```
 
-Por fim, na main a primeira função a ser cumprida é o recebimento dos arquivos de entrada que é feito através dos parâmetros recebidos, argc e argv, para tanto é criado um laço de repetição, dentro deste é feita a leitura de dos dados de cada um dos arquivos de entrada, os mesmos são posteriormente salvos em um vetor. Caso o usuário não tenha fornecido a quantidade mínima de argumentos para o programa funcionar, é emitida uma mensagem de erro na tela "Faltam argumentos". Além disso, inicia-se uma contagem do tempo de execução do programa no início desta função, para tanto utiliza-se a função  gettimeofday() para pegar o tempo inicial e final do sistema, estes valores são utilizados no final, quando a variável time_spent subtraí o valor final do inicial, para obter o tempo de execução, veja que ela informa o tempo em segundos. Em seguida o programa salva em uma variável global o número de threads requisitada pelo usuário e cria um vetor para armazenar as threads a serem criadas. O próximo passo é dividir o total de números lidos pela quantidade de threads a serem criadas, e então cria-las e iniciá-las com a função thread_merge_sort e então usar a função “join” para anexá-las ao fluxo inicial. Por fim os valores ordenados são mesclados em um vetor principal que é usado para gravar os dados em um arquivo de saída.
+Por fim, na main a primeira função a ser cumprida é o recebimento dos arquivos de entrada que é feito através dos parâmetros recebidos, argc e argv, para tanto é criado um laço de repetição, dentro deste é feita a leitura dos dados de cada um dos arquivos de entrada, os mesmos são posteriormente salvos em um vetor. Caso o usuário não tenha fornecido a quantidade mínima de argumentos para o programa funcionar, é emitida uma mensagem de erro na tela "Faltam argumentos". Além disso, inicia-se uma contagem do tempo de execução do programa no início desta função, para tanto utiliza-se a função  gettimeofday() para pegar a configuração de tempo da máquina, em seguida utiliza-se a função clock() para pegar a contagem que está no clock da máquina, isto é o horário de máquina, sem configurações. Dessa forma, a função clock é utilizada para calcular o tempo estimado e a função gettimeofday para formatar esse tempo em segundos. Após isto, o programa salva em uma variável global o número de threads requisitada pelo usuário e cria um vetor para armazenar as threads a serem criadas. O próximo passo é dividir o total de números lidos pela quantidade de threads a serem criadas, e então cria-las e iniciá-las com a função thread_merge_sort e então usar a função “join” para anexá-las ao fluxo inicial. Por fim os valores ordenados são mesclados em um vetor principal que é usado para gravar os dados em um arquivo de saída.
 
 ```c
 int main(int argc, const char * argv[]) {
 
     struct timeval  start, end;
     double time_spent;
-
+    clock_t ctTempoInicial, ctTempoFinal;
+   //ARQUIVO DE SAIDA
+    FILE *fp;
     if(argc<2){
         printf("faltam argumentos /n");
     }
     else{
-        NUM_THREADS = strtol(argv[1],NULL,10);/*Transforma os valores em int*/
+        NUM_THREADS = strtol (argv[1],NULL,10);/*transforma o valor em inteiro */
 
-        pthread_t threads[NUM_THREADS];/*tipo threads*/
+        pthread_t threads[NUM_THREADS];
         gettimeofday(&start, NULL);
         //pegar dos arquivos aqui
-        for(int a=2; a<argc;a++){
+        for(int a=2; a<(argc-2);a++){
 			printf("argv %s\n",argv[a]);
 			FILE *fp = fopen(argv[a],"r");
 				while(!feof(fp)){
@@ -172,41 +177,35 @@ int main(int argc, const char * argv[]) {
 			fclose(fp);
 		}
 
-		NUMBERS_PER_THREAD = TAMANHO / NUM_THREADS;
-        OFFSET = TAMANHO % NUM_THREADS;
+	NUMBERS_PER_THREAD = TAMANHO / NUM_THREADS; /*Divide a quantidade de números que cada thread deverá cuidar*/
+        OFFSET = TAMANHO % NUM_THREADS; /*Verifica se nenhuma thread está com números a mais*/
 
+        ctTempoInicial = clock(); /*Inicia a contagem do tempo de execução*/
         for (long i = 0; i < NUM_THREADS; i ++) {
             int rc = pthread_create(&threads[i], NULL, thread_merge_sort, (void *)i);
             if (rc){
-                printf("ERRO\n", rc);
+                printf("ERRO\n");
                 exit(-1);
             }
         }
-
+	/*Junta as threads no fluxo princial*/
         for(long i = 0; i < NUM_THREADS; i++) {
             pthread_join(threads[i], NULL);
         }
 
-        mesclando_subvetores(v, NUM_THREADS, 1);
+        mesclando_subvetores(v, NUM_THREADS, 1);/*mesclando todos os sub-vetores*/
+        ctTempoFinal = clock();/*Finaliza a contagem do tempo de execução*/
 
-
-        gettimeofday(&end, NULL);
-        time_spent = ((double) ((double) (end.tv_usec - start.tv_usec) / 1000000 +
-                                (double) (end.tv_sec - start.tv_sec)));
-        printf("Tempo gasto na execucao: %f segundos\n", time_spent);
-        printf("Vetor ordenado:");
-        for (int i = 0; i < TAMANHO; i ++) {
-            printf("%d ",v[i]);
-        }
-	FILE *fp;	
-	fp = fopen("saida.txt","w");
-	for (int i = 0; i < TAMANHO; i ++) {
+        
+        printf("Tempo Decorrido : %f\n", (double)(ctTempoFinal - ctTempoInicial) / CLOCKS_PER_SEC);
+	
+	fp = fopen(argv[argc-1],"w");
+	for (int i = 0; i < TAMANHO; i ++) 
             fprintf(fp,"%d ",v[i]);
-        }
-		fclose(fp);
+		//fclose(fp);
     }
 
-
+	pthread_exit(NULL);
 
     /* teste para garantir que o vetor está ordenado*/
     /* teste_vetor_ordenado(v); */
@@ -218,31 +217,32 @@ int main(int argc, const char * argv[]) {
 
 ### Compilação 
 
-Para a compilação do programa, é necessário utilizar o prompt de comando de um computador com o sistema operacional Linux. Após abrir a tela do terminal, você deverá utilizar o comando cd <nome do arquivo> até entrar no diretório do código.  Veja na imagem abaixo um exemplo: 
+Para a compilação do programa, é necessário utilizar o prompt de comando de um computador com o sistema operacional Linux. Após abrir a tela do terminal, você deverá utilizar o comando cd <caminho do arquivo> até entrar no diretório do código. 
 
-*******Imagem do terminal ***
+Em seguida, digite o comando:  gcc  mergesort.c  -lpthread  -o mergesort .
 
-Em seguida, digite o comando gcc *c, como na tela abaixo:
+Logo após a compilação (isso pode levar alguns segundos), digite o comando ./mergesort <número de threads> <arquivos de entrada> -o <arquivo de saida> 
 
-***Tela ***
+Exemplo: ./mergesort 2 arq1.dat  -o  saida.txt
 
-Posteriormente digite o comando  ./a.out <numero de threads> <arquivo de entrada> pra executar. Não se esqueça que o arquivo de entrada deve conter apenas os números que serão ordenados no programa.
+![image-20191120182451560](C:\Users\isabe\AppData\Roaming\Typora\typora-user-images\image-20191120182451560.png)
 
-***Exemplo da execução ***
-
-****Exemplo do arquivo de entrada****
-
-Dessa forma, o programa está pronto para rodar, e irá criar um arquivo de saída como mostra a figura abaixo.
-
-**Figura do arquivo de saída**
+Dessa forma, o programa executará a sua rotina, e criará o arquivo de saída no diretório no qual ele foi executado.
 
 ### Gráficos
 
-O gráfico abaixo demonstra o desempenho do sistema em diferentes condições, pode-se notar o comportamento de aumento no tempo de execução do programa em consonância com o aumento do número de arquivos e de threads, isso se dá devido a recursividade da função merge, que faz com que o programa passe mais tempo nela conforme a quantidade de threads aumenta. Ademais, o modelo de threads utilizado, que por sua vez separa igualmente o tempo para cada thread que foi criada (1 thread = 1 tempo), torna o tempo total uma soma cada vez maior conforme a quantidade de threads aumenta. 
+O gráfico abaixo demonstra o desempenho do sistema em diferentes condições:
 
  **![img](https://lh3.googleusercontent.com/d9xxaQLmDO9H3cfXfYnpSmEKHy_fIk7XpRwqHvBvBUJtYozZcBXZgFcArgEBJstuo-ldpTgHB9zVIlwH_F_VrmryGfVUTagozt6mSSm9XbwsVGlB4huBw-9ky7Sk4dJM8KcTJpa1)** 
 
+##### Tabela com valores do gráfico
 
+![image-20191120181148575](C:\Users\isabe\AppData\Roaming\Typora\typora-user-images\image-20191120181148575.png)
 
-  
+#####  Conclusão
 
+Dado os resultados apresentados no gráfico acima, é possível notar o comportamento de aumento no tempo de execução do programa em consonância com o aumento do número de arquivos e de threads, isso se dá devido a recursividade da função merge, que faz com que o programa passe mais tempo nela conforme a quantidade de threads aumenta. Ademais, o modelo de threads utilizado, que por sua vez separa igualmente o tempo para cada thread que foi criada (1 thread = 1 tempo), torna o tempo total uma soma cada vez maior conforme a quantidade de threads aumenta. 
+
+### Vídeo
+
+Segue o link com o funcionamento do programa:  [**https://youtu.be/Np9-gVg7Y0w**](https://youtu.be/Np9-gVg7Y0w) 	
