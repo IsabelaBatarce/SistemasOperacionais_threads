@@ -225,7 +225,7 @@ Logo após a compilação (isso pode levar alguns segundos), digite o comando ./
 
 Exemplo: ./mergesort 2 arq1.dat  -o  saida.txt
 
-![image-20191120182451560](C:\Users\isabe\AppData\Roaming\Typora\typora-user-images\image-20191120182451560.png)
+ **![img](https://lh5.googleusercontent.com/9wh66h3syM6skGGdIFw1xzU0HEEPFjO7bewJ7LtBnVenn4sGS6ngqZQHo_nQ0Qo6XMzOdSaRd6MnPHEMzuqGv1BV5My6NgAi_VrfIky9hgkET24jq95vGRLzWvJd-OK9Xhzt79de)** 
 
 Dessa forma, o programa executará a sua rotina, e criará o arquivo de saída no diretório no qual ele foi executado.
 
@@ -237,7 +237,7 @@ O gráfico abaixo demonstra o desempenho do sistema em diferentes condições:
 
 ##### Tabela com valores do gráfico
 
-![image-20191120181148575](C:\Users\isabe\AppData\Roaming\Typora\typora-user-images\image-20191120181148575.png)
+ ![img](https://lh3.googleusercontent.com/2vNWEl4dbGkPz6HTu71XgLOwcjAxObAn5kWXs7_KxM51NFkBvf7VTLLaZkpR0qTbWMbYOTPUixOWXwmKMIrDyUsq3dp_ujz3Fh-XLGWOclhOStpcVh39HKt7-pnvtUffqDrGbgAj) 
 
 #####  Conclusão
 
